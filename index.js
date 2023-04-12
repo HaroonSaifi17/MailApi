@@ -24,20 +24,15 @@ var transporter = nodemailer.createTransport(smtpTransport({
 
 
 app.use(express.urlencoded({ extended: true }))
-app.post('/',(req,res)=>{
+app.post('/', async(req,res)=>{
    try {
-transporter.sendMail({
+   let info= await transporter.sendMail({
     from: process.env.USERNAME,
      to: req.body.mail,
      subject: 'Sending Email using Node.js[nodemailer]',
     text: 'That was easy!'
-    }, function(error, info){
-  if (error) {
-    console.log(error);
-  } else {
-    console.log('Email sent');
-  }
 });
+    console.log("Message send %s",info.messageId)
      res.status(200).end()
    } catch (error) {
       res.status(500).json(error.message)
