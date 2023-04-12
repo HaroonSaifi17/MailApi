@@ -43,6 +43,6 @@ transporter.sendMail({
       res.status(500).json(error.message)
    }
 })
-app.listen(port, () => {
+app.listen(process.env.PORT || port, () => {
   console.log(`Server is listening at http://localhost:${port} `)
 })
