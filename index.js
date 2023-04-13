@@ -1,7 +1,9 @@
 const express = require('express')
 const cors = require('cors')
 const nodemailer = require('nodemailer')
-var smtpTransport = require('nodemailer-smtp-transport');
+var smtpTransport = require('nodemailer-smtp-transport')
+const mongoose = require('mongoose')
+const Mail = require('./Model/mail')
 require('dotenv').config()
 
 const app = express()
@@ -13,24 +15,37 @@ app.use(
     optionsSuccessStatus: 200,
   })
 )
-var transporter = nodemailer.createTransport(smtpTransport({
-  service: 'gmail',
-  host: 'smtp.gmail.com',
-  auth: {
-    user: process.env.USERNAME,
-    pass: process.env.PASSWORD
-  }
-}));
+var transporter = nodemailer.createTransport(
+  smtpTransport({
+    service: 'gmail',
+    host: 'smtp.gmail.com',
+    auth: {
+      user: process.env.USERNAME,
+      pass: process.env.PASSWORD,
+    },
+  })
+)
 
+try {
+  mongoose.connect(process.env.BLOGDB_CONNECTION_URL, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+} catch (err) {
+  console.log('could not connect')
+}
+const dbConnection = mongoose.connection
+dbConnection.on('error', (err) => console.log(`Connection error ${err}`))
+dbConnection.once('open', () => console.log('Connected to DB!'))
 
 app.use(express.urlencoded({ extended: true }))
-app.post('/', async(req,res)=>{
-   try {
-   let info= await transporter.sendMail({
-    from: process.env.USERNAME,
-     to: req.body.mail,
-     subject: 'Thank You for subscribing',
-    html: `
+app.post('/', async (req, res) => {
+  try {
+    let info = await transporter.sendMail({
+      from: process.env.USERNAME,
+      to: req.body.mail,
+      subject: 'Thank You for subscribing',
+      html: `
     <style>
       body {
         font-family: Arial, sans-serif;
@@ -66,13 +81,18 @@ app.post('/', async(req,res)=>{
       <hr>
       <p>If you no longer wish to receive our newsletters, please <a href="#">unsubscribe here</a>.</p>
     </div>
-`
-});
-    console.log("Message send %s",info.messageId)
-     res.status(200).end()
-   } catch (error) {
-      res.status(500).json(error.message)
-   }
+`,
+    })
+    console.log('Message send %s', info.messageId)
+    res.status(200).end()
+    await Mail.findOneAndUpdate(
+      { mail: req.body.mail },
+      { mail: req.body.mail },
+      { upsert: true }
+    )
+  } catch (error) {
+    res.status(500).json(error.message)
+  }
 })
 app.listen(process.env.PORT || port, () => {
   console.log(`Server is listening at http://localhost:${port} `)
