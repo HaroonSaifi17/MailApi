@@ -27,7 +27,7 @@ var transporter = nodemailer.createTransport(
 )
 
 try {
-  mongoose.connect(process.env.BLOGDB_CONNECTION_URL, {
+  mongoose.connect(process.env.MONGODB_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   })
